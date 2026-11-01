@@ -375,8 +375,11 @@ td.right, th.right { text-align: right; }
 .pill.bad { color: var(--bad); }
 .message { font-family: Consolas, Menlo, monospace; font-size: .8rem; min-height: 140px; }
 .zalo { display: grid; gap: 10px; padding: 14px; color: #fff; background: linear-gradient(180deg, #0058e0, #0068ff); border-radius: 8px; }
-.zalo-qr { justify-self: center; display: block; width: min(250px, 100%); border-radius: 8px; }
-.zalo-name { text-align: center; font-size: 1.05rem; }
+.pay-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.pay-card { margin: 0; padding: 10px; display: grid; gap: 6px; align-content: start; background: #fff; color: #14233b; border-radius: 8px; font-size: .84rem; text-align: center; overflow-wrap: anywhere; }
+.pay-card img { display: block; width: 100%; max-width: 230px; margin: 0 auto; }
+.pay-foot { color: #fff; background: linear-gradient(180deg, #0058e0, #0068ff); }
+.pay-foot-in { max-width: 720px; margin: 0 auto; padding: 22px 16px; display: grid; gap: 12px; }
 .zalo label { font-weight: 600; }
 .zalo .message { background: #fff; color: #14233b; border-color: #fff; }
 .zalo-btn { flex: 1; background: #fff; color: #0058e0; border-color: #fff; font-weight: 600; }

@@ -375,8 +375,11 @@ td.right, th.right { text-align: right; }
 .pill.bad { color: var(--bad); }
 .message { font-family: Consolas, Menlo, monospace; font-size: .8rem; min-height: 140px; }
 .zalo { display: grid; gap: 10px; padding: 14px; color: #fff; background: linear-gradient(180deg, #0058e0, #0068ff); border-radius: 8px; }
-.zalo-qr { justify-self: center; display: block; width: min(250px, 100%); border-radius: 8px; }
-.zalo-name { text-align: center; font-size: 1.05rem; }
+.pay-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.pay-card { margin: 0; padding: 10px; display: grid; gap: 6px; align-content: start; background: #fff; color: #14233b; border-radius: 8px; font-size: .84rem; text-align: center; overflow-wrap: anywhere; }
+.pay-card img { display: block; width: 100%; max-width: 230px; margin: 0 auto; }
+.pay-foot { color: #fff; background: linear-gradient(180deg, #0058e0, #0068ff); }
+.pay-foot-in { max-width: 720px; margin: 0 auto; padding: 22px 16px; display: grid; gap: 12px; }
 .zalo label { font-weight: 600; }
 .zalo .message { background: #fff; color: #14233b; border-color: #fff; }
 .zalo-btn { flex: 1; background: #fff; color: #0058e0; border-color: #fff; font-weight: 600; }
@@ -522,6 +525,8 @@ h1, h2, h3, .card-name, .greet, .brand-chip, .tree summary { font-variant-numeri
 
   <p id="draft-note" class="draft-note" hidden></p>
   <main id="view" class="wrap"></main>
+
+  <section id="pay-foot" class="pay-foot" aria-label="Thanh toán và kết bạn Zalo"></section>
 
   <footer class="foot">
     <div class="foot-in">
@@ -1226,22 +1231,48 @@ async function createOrder(form) {
 
 const bankReady = () => Boolean(Core.BINS[cfg.bank.code]) && !Core.isPlaceholder(cfg.bank.num);
 
+/* QR kèm số tiền và nội dung của đơn; chỉ dùng cho đơn chuyển khoản khi đã có tài khoản thật. */
+function bankQr(order) {
+  if (!bankReady() || !['qr', 'bank'].includes(order.method)) return null;
+  const note = Core.transferNote(order.code, order.phone);
+  return qrImage(Core.vietQr({ bin: Core.BINS[cfg.bank.code], account: cfg.bank.num, amount: order.total, note }));
+}
+
+const zaloCard = () => `<figure class="pay-card">
+  <img class="zalo-qr" src="${zaloQr}" alt="Mã QR Zalo của ${esc(cfg.tenZalo)}">
+  <figcaption><strong>Kết bạn Zalo</strong><br>${esc(cfg.tenZalo)} · <span class="num">${esc(cfg.soZalo)}</span></figcaption>
+</figure>`;
+
+const bankCard = (image) => `<figure class="pay-card">
+  <img src="${image}" alt="Mã QR chuyển khoản ${esc(cfg.bank.ten)}">
+  <figcaption><strong>Thanh toán ${esc(cfg.bank.ten)}</strong><br><span class="num">${esc(cfg.bank.num)}</span> · ${esc(cfg.bank.own)}</figcaption>
+</figure>`;
+
+function renderPayFoot() {
+  $('#pay-foot').innerHTML = `<div class="pay-foot-in">
+    <h2>Thanh toán và kết bạn Zalo</h2>
+    <p>Quý khách vui lòng đặt hàng trước để có mã đơn, sau đó ghi đúng nội dung khi chuyển khoản và gửi thông tin đơn qua Zalo.</p>
+    <div class="pay-pair">${bankReady() && qrTinh ? bankCard(qrTinh) : ''}${zaloCard()}</div>
+    <a class="btn zalo-btn" href="https://zalo.me/${esc(cfg.soZalo)}" target="_blank" rel="noopener">Nhắn Zalo</a>
+  </div>`;
+}
+
 function paymentBlock(order) {
   if (order.method === 'cod') return '<p>Bạn thanh toán cho nhân viên khi nhận hàng.</p>';
   if (order.method === 'store') return '<p>Bạn thanh toán bằng tiền mặt khi đến cửa hàng.</p>';
   const note = Core.transferNote(order.code, order.phone);
   if (!bankReady()) return '<p>Cửa hàng sẽ hướng dẫn thanh toán qua Zalo sau khi xác nhận đơn.</p>';
-  const payload = Core.vietQr({ bin: Core.BINS[cfg.bank.code], account: cfg.bank.num, amount: order.total, note });
-  const image = order.method === 'qr' ? qrImage(payload) : null;
+  const image = bankQr(order);
   const lead = order.method === 'qr' ? `quét mã QR ${esc(cfg.bank.ten)} ở bên dưới` : `chuyển khoản theo thông tin ${esc(cfg.bank.ten)} ở bên dưới`;
   return `<p>Quý khách có thể thanh toán đơn hàng bằng cách ${lead}.</p>
-    ${image ? `<img class="qr" src="${image}" alt="Mã QR VietQR cho đơn ${esc(order.code)}">` : ''}
+    ${image && order.synced ? `<img class="qr" src="${image}" alt="Mã QR VietQR cho đơn ${esc(order.code)}">` : ''}
     ${order.method === 'qr' && !image ? '<p class="note">Chưa tải được mã QR. Hãy chuyển khoản theo thông tin dưới đây.</p>' : ''}
     ${bankLines()}<p>Số tiền: <strong class="num">${money(order.total)}</strong><br>Nội dung: <strong>${esc(note)}</strong></p>`;
 }
 
 function zaloBlock(order) {
   const contact = `Zalo số ${esc(cfg.soZalo)} (Anh ${esc(cfg.tenZalo)})`;
+  const qr = bankQr(order);
   const send = ['qr', 'bank'].includes(order.method)
     ? `Sau khi chuyển khoản thành công, vui lòng sao chép thông tin đơn hàng ở phần bên dưới và gửi tin nhắn qua ${contact} để chúng tôi xác nhận và tiến hành giao hàng.`
     : `Quý khách vui lòng sao chép thông tin đơn hàng ở phần bên dưới và gửi tin nhắn qua ${contact} để chúng tôi xác nhận và tiến hành giao hàng.`;
@@ -1253,8 +1284,7 @@ function zaloBlock(order) {
       <button class="btn zalo-btn" data-act="copy" data-target="#msg">Sao chép thông tin</button>
       <a class="btn zalo-btn" href="https://zalo.me/${esc(cfg.soZalo)}" target="_blank" rel="noopener">Nhắn Zalo</a>
     </div>
-    <img class="zalo-qr" src="${zaloQr}" alt="Mã QR Zalo của ${esc(cfg.tenZalo)}">
-    <p class="zalo-name"><strong>${esc(cfg.tenZalo)}</strong> · <span class="num">${esc(cfg.soZalo)}</span></p>
+    <div class="pay-pair">${qr ? bankCard(qr) : ''}${zaloCard()}</div>
     <p>Để được tư vấn trực tiếp, Quý khách hãy quét mã QR Zalo hoặc bấm nút "Nhắn Zalo" để kết bạn và trò chuyện cùng chúng tôi. Xin chân thành cảm ơn!</p>
   </section>`;
 }
@@ -1952,6 +1982,7 @@ addEventListener('hashchange', () => { scrollTo(0, 0); renderView(); });
     ['Số mặt hàng', giaThongKe.soMatHang], ['Rẻ nhất', money(giaThongKe.reNhat)],
     ['Trung vị', money(giaThongKe.trungVi)], ['Đắt nhất', money(giaThongKe.datNhat)],
   ].map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('');
+  renderPayFoot();
   $('#shop-name').textContent = cfg.tenShop;
   $('#shop-sub').textContent = cfg.phuDe;
   $('#foot-zalo').textContent = `Zalo/SMS cửa hàng: ${cfg.soZalo}`;
