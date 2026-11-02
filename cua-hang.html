@@ -1271,7 +1271,7 @@ const bankCard = (image) => `<figure class="pay-card">
 function renderPayFoot() {
   $('#pay-foot').innerHTML = `<div class="pay-foot-in">
     <h2>Thanh toán và kết bạn Zalo</h2>
-    <p>Quý khách vui lòng đặt hàng trước để có mã đơn, sau đó ghi đúng nội dung khi chuyển khoản và gửi thông tin đơn qua Zalo.</p>
+    <p>Mọi người hãy thêm sản phẩm vào Giỏ hàng, sau đó mới thanh toán và sao chép thông tin đơn gửi vào Zalo của tôi. Tôi sẽ cập nhật thông tin, xuất hóa đơn và gửi hàng về cho mọi người.</p>
     <div class="pay-pair">${bankReady() && qrTinh ? bankCard(qrTinh) : ''}${zaloCard()}</div>
     <a class="btn zalo-btn" href="https://zalo.me/${esc(cfg.soZalo)}" target="_blank" rel="noopener">Nhắn Zalo</a>
   </div>`;
